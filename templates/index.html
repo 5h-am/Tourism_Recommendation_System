@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tourism Recommendation System</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh; 
+            padding: 20px; 
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { 
+            color: white; 
+            text-align: center; 
+            margin-bottom: 30px; 
+            font-size: 2.5em; 
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3); 
+        }
+        .card { 
+            background: white; 
+            border-radius: 15px; 
+            padding: 30px; 
+            margin-bottom: 20px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3); 
+        }
+        .card h2 { color: #667eea; margin-bottom: 20px; }
+        .form-group { margin-bottom: 20px; }
+        label { 
+            display: block; 
+            margin-bottom: 8px; 
+            font-weight: 600; 
+            color: #333; 
+        }
+        select, input { 
+            width: 100%; 
+            padding: 12px; 
+            border: 2px solid #e0e0e0; 
+            border-radius: 8px; 
+            font-size: 16px; 
+            transition: border-color 0.3s; 
+        }
+        select:focus, input:focus { 
+            outline: none; 
+            border-color: #667eea; 
+        }
+        .checkbox-group { 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 15px; 
+        }
+        .checkbox-group label { 
+            display: flex; 
+            align-items: center; 
+            font-weight: normal; 
+            margin: 0; 
+            cursor: pointer; 
+        }
+        .checkbox-group input { 
+            width: auto; 
+            margin-right: 8px; 
+        }
+        button { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; 
+            border: none; 
+            padding: 15px 30px; 
+            border-radius: 8px; 
+            font-size: 16px; 
+            font-weight: 600; 
+            cursor: pointer; 
+            transition: transform 0.2s; 
+            width: 100%; 
+        }
+        button:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3); 
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .results { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); 
+            gap: 20px; 
+            margin-top: 20px; 
+        }
+        .destination-card { 
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 20px; 
+            border-radius: 12px; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1); 
+            transition: transform 0.3s; 
+            position: relative;
+        }
+        .destination-card:hover { 
+            transform: translateY(-5px); 
+        }
+        .destination-card h3 { 
+            color: #667eea; 
+            margin-bottom: 10px; 
+        }
+        .destination-card p { 
+            margin: 5px 0; 
+            color: #555; 
+        }
+        .score { 
+            background: #667eea; 
+            color: white; 
+            padding: 5px 10px; 
+            border-radius: 20px; 
+            display: inline-block; 
+            font-size: 14px; 
+            font-weight: bold; 
+            margin-top: 10px;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin: 2px;
+        }
+        .badge-budget-low { background: #4caf50; color: white; }
+        .badge-budget-medium { background: #ff9800; color: white; }
+        .badge-budget-high { background: #f44336; color: white; }
+        .itinerary-item { 
+            background: #f5f7fa; 
+            padding: 15px; 
+            margin: 10px 0; 
+            border-radius: 8px; 
+            border-left: 4px solid #667eea; 
+        }
+        .total-cost { 
+            background: #667eea; 
+            color: white; 
+            padding: 20px; 
+            border-radius: 8px; 
+            text-align: center; 
+            font-size: 1.5em; 
+            font-weight: bold; 
+            margin-top: 20px; 
+        }
+        #optimizeSection { display: none; }
+        .selected-card {
+            border: 3px solid #667eea;
+        }
+        .add-btn {
+            margin-top: 10px;
+            font-size: 14px;
+            padding: 8px;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌍 Tourism Recommendation System</h1>
+        
+        <div class="card">
+            <h2>Find Your Perfect Destination</h2>
+            <div class="form-group">
+                <label>Budget Level:</label>
+                <select id="budget">
+                    <option value="">Any Budget</option>
+                    <option value="low">Budget-Friendly ($)</option>
+                    <option value="medium">Moderate ($$)</option>
+                    <option value="high">Luxury ($$$)</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Destination Type:</label>
+                <select id="type">
+                    <option value="">Any Type</option>
+                    <option value="city">City</option>
+                    <option value="beach">Beach</option>
+                    <option value="nature">Nature</option>
+                    <option value="mixed">Mixed</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Best Season:</label>
+                <select id="season">
+                    <option value="">Any Season</option>
+                    <option value="spring">Spring</option>
+                    <option value="summer">Summer</option>
+                    <option value="fall">Fall</option>
+                    <option value="winter">Winter</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Interests (select all that apply):</label>
+                <div class="checkbox-group">
+                    <label><input type="checkbox" value="culture"> Culture</label>
+                    <label><input type="checkbox" value="food"> Food</label>
+                    <label><input type="checkbox" value="beach"> Beach</label>
+                    <label><input type="checkbox" value="nature"> Nature</label>
+                    <label><input type="checkbox" value="adventure"> Adventure</label>
+                    <label><input type="checkbox" value="art"> Art</label>
+                    <label><input type="checkbox" value="history"> History</label>
+                    <label><input type="checkbox" value="shopping"> Shopping</label>
+                    <label><input type="checkbox" value="wellness"> Wellness</label>
+                    <label><input type="checkbox" value="diving"> Diving</label>
+                </div>
+            </div>
+            
+            <button onclick="getRecommendations()">Get Recommendations</button>
+        </div>
+        
+        <div id="recommendations" class="results"></div>
+        
+        <div id="optimizeSection" class="card">
+            <h2>Optimize Your Itinerary</h2>
+            <p style="margin-bottom: 15px; color: #666;">
+                Selected <span id="selectedCount">0</span> destination(s)
+            </p>
+            <div class="form-group">
+                <label>Total Days:</label>
+                <input type="number" id="days" placeholder="e.g., 14" min="1">
+            </div>
+            <div class="form-group">
+                <label>Total Budget (USD) - Optional:</label>
+                <input type="number" id="totalBudget" placeholder="e.g., 3000">
+            </div>
+            <button onclick="optimizeItinerary()">Optimize Itinerary</button>
+            <div id="itinerary"></div>
+        </div>
+    </div>
+    
+    <script>
+        let selectedDestinations = new Set();
+        
+        async function getRecommendations() {
+            const budget = document.getElementById('budget').value;
+            const type = document.getElementById('type').value;
+            const season = document.getElementById('season').value;
+            const interests = Array.from(document.querySelectorAll('.checkbox-group input:checked'))
+                .map(cb => cb.value);
+            
+            const container = document.getElementById('recommendations');
+            container.innerHTML = '<div class="loading">🔍 Finding your perfect destinations...</div>';
+            
+            try {
+                const response = await fetch('/api/recommend', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ budget, type, season, interests })
+                });
+                
+                const recommendations = await response.json();
+                displayRecommendations(recommendations);
+            } catch (error) {
+                container.innerHTML = '<div class="loading">❌ Error loading recommendations</div>';
+                console.error('Error:', error);
+            }
+        }
+        
+        function displayRecommendations(recommendations) {
+            const container = document.getElementById('recommendations');
+            
+            if (recommendations.length === 0) {
+                container.innerHTML = '<div class="loading">No destinations found. Try different preferences!</div>';
+                return;
+            }
+            
+            container.innerHTML = recommendations.map(dest => {
+                const isSelected = selectedDestinations.has(dest.id);
+                const budgetClass = `badge-budget-${dest.budget}`;
+                const stars = '⭐'.repeat(Math.round(dest.rating));
+                
+                return `
+                    <div class="destination-card ${isSelected ? 'selected-card' : ''}" id="card-${dest.id}">
+                        <h3>${dest.name}</h3>
+                        <p style="color: #888; font-style: italic;">${dest.description}</p>
+                        <p><strong>📍 Country:</strong> ${dest.country}</p>
+                        <p><strong>🏖️ Type:</strong> ${dest.type}</p>
+                        <p><strong>💰 Budget:</strong> <span class="badge ${budgetClass}">${dest.budget.toUpperCase()}</span></p>
+                        <p><strong>⭐ Rating:</strong> ${stars} (${dest.rating})</p>
+                        <p><strong>🎯 Interests:</strong> ${dest.interests.join(', ')}</p>
+                        <p><strong>🌤️ Best Season:</strong> ${dest.season.join(', ')}</p>
+                        <span class="score">Match Score: ${Math.round(dest.score)}</span>
+                        <button class="add-btn" onclick="toggleDestination(${dest.id}, '${dest.name}')">
+                            ${isSelected ? '✓ Selected' : '+ Add to Itinerary'}
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function toggleDestination(id, name) {
+            const card = document.getElementById(`card-${id}`);
+            
+            if (selectedDestinations.has(id)) {
+                selectedDestinations.delete(id);
+                card.classList.remove('selected-card');
+            } else {
+                selectedDestinations.add(id);
+                card.classList.add('selected-card');
+            }
+            
+            document.getElementById('selectedCount').textContent = selectedDestinations.size;
+            document.getElementById('optimizeSection').style.display = 
+                selectedDestinations.size > 0 ? 'block' : 'none';
+            
+            // Update button text
+            const button = card.querySelector('button');
+            button.textContent = selectedDestinations.has(id) ? '✓ Selected' : '+ Add to Itinerary';
+        }
+        
+        async function optimizeItinerary() {
+            const days = parseInt(document.getElementById('days').value);
+            const budgetInput = document.getElementById('totalBudget').value;
+            const budget = budgetInput ? parseInt(budgetInput) : null;
+            
+            if (!days || selectedDestinations.size === 0) {
+                alert('Please select destinations and enter total days');
+                return;
+            }
+            
+            const container = document.getElementById('itinerary');
+            container.innerHTML = '<div class="loading">✨ Optimizing your itinerary...</div>';
+            
+            try {
+                const response = await fetch('/api/optimize', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        destinationIds: Array.from(selectedDestinations), 
+                        days, 
+                        budget 
+                    })
+                });
+                
+                const result = await response.json();
+                displayItinerary(result);
+            } catch (error) {
+                container.innerHTML = '<div class="loading">❌ Error optimizing itinerary</div>';
+                console.error('Error:', error);
+            }
+        }
+        
+        function displayItinerary(result) {
+            const container = document.getElementById('itinerary');
+            
+            if (result.error) {
+                container.innerHTML = `<div class="loading">❌ ${result.error}</div>`;
+                return;
+            }
+            
+            container.innerHTML = `
+                ${result.itinerary.map((item, i) => `
+                    <div class="itinerary-item">
+                        <h4>📅 Day ${item.start_day}${item.days > 1 ? `-${item.end_day}` : ''}: ${item.destination}, ${item.country}</h4>
+                        <p><strong>Duration:</strong> ${item.days} day${item.days > 1 ? 's' : ''}</p>
+                        <p><strong>Budget Level:</strong> ${item.budget_level.toUpperCase()}</p>
+                        <p><strong>Estimated Cost:</strong> $${item.estimated_cost} (~$${Math.round(item.estimated_cost / item.days)}/day)</p>
+                        <p><strong>Recommended Activities:</strong> ${item.activities.join(', ')}</p>
+                    </div>
+                `).join('')}
+                <div class="total-cost">
+                    💵 Total Cost: $${result.total_cost}
+                    <div style="font-size: 0.7em; margin-top: 10px;">
+                        Average: $${result.average_daily_cost}/day over ${result.total_days} days
+                    </div>
+                    ${result.within_budget !== null ? 
+                        (result.within_budget ? 
+                            '<div style="margin-top: 10px;">✅ Within Budget</div>' : 
+                            '<div style="margin-top: 10px;">⚠️ Over Budget</div>') 
+                        : ''}
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
+
