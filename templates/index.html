@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tourism Recommendation System</title>
+    <title>Tourism Recommendation System - TripAdvisor</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
@@ -51,6 +51,11 @@
             display: flex; 
             flex-wrap: wrap; 
             gap: 15px; 
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
         }
         .checkbox-group label { 
             display: flex; 
@@ -75,7 +80,7 @@
             transition: transform 0.2s; 
             width: 100%; 
         }
-        button:hover { 
+        button:hover:not(:disabled) { 
             transform: translateY(-2px); 
             box-shadow: 0 5px 15px rgba(0,0,0,0.3); 
         }
@@ -85,79 +90,130 @@
         }
         .results { 
             display: grid; 
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); 
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); 
             gap: 20px; 
             margin-top: 20px; 
         }
-        .destination-card { 
+        .attraction-card { 
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             padding: 20px; 
             border-radius: 12px; 
             box-shadow: 0 5px 15px rgba(0,0,0,0.1); 
-            transition: transform 0.3s; 
+            transition: transform 0.3s, box-shadow 0.3s; 
             position: relative;
+            cursor: pointer;
         }
-        .destination-card:hover { 
+        .attraction-card:hover { 
             transform: translateY(-5px); 
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
         }
-        .destination-card h3 { 
+        .attraction-card.selected-card {
+            border: 3px solid #667eea;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+        .attraction-card h3 { 
             color: #667eea; 
             margin-bottom: 10px; 
+            font-size: 1.3em;
         }
-        .destination-card p { 
+        .attraction-card p { 
             margin: 5px 0; 
             color: #555; 
+            font-size: 0.95em;
         }
-        .score { 
-            background: #667eea; 
+        .score-badge { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white; 
-            padding: 5px 10px; 
+            padding: 8px 15px; 
             border-radius: 20px; 
             display: inline-block; 
-            font-size: 14px; 
+            font-size: 16px; 
             font-weight: bold; 
             margin-top: 10px;
+            margin-bottom: 10px;
         }
-        .badge {
+        .star-rating {
+            color: #ffa500;
+            font-size: 1.2em;
+            margin: 5px 0;
+        }
+        .category-tag {
             display: inline-block;
-            padding: 4px 8px;
-            border-radius: 4px;
+            padding: 4px 10px;
+            border-radius: 15px;
             font-size: 12px;
-            margin: 2px;
-        }
-        .badge-budget-low { background: #4caf50; color: white; }
-        .badge-budget-medium { background: #ff9800; color: white; }
-        .badge-budget-high { background: #f44336; color: white; }
-        .itinerary-item { 
-            background: #f5f7fa; 
-            padding: 15px; 
-            margin: 10px 0; 
-            border-radius: 8px; 
-            border-left: 4px solid #667eea; 
-        }
-        .total-cost { 
-            background: #667eea; 
-            color: white; 
-            padding: 20px; 
-            border-radius: 8px; 
-            text-align: center; 
-            font-size: 1.5em; 
-            font-weight: bold; 
-            margin-top: 20px; 
-        }
-        #optimizeSection { display: none; }
-        .selected-card {
-            border: 3px solid #667eea;
+            margin: 3px;
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+            border: 1px solid rgba(102, 126, 234, 0.3);
         }
         .add-btn {
-            margin-top: 10px;
+            margin-top: 15px;
             font-size: 14px;
-            padding: 8px;
+            padding: 10px;
+            width: 100%;
         }
         .loading {
             text-align: center;
-            padding: 20px;
+            padding: 40px;
             color: #667eea;
+            font-size: 1.1em;
+        }
+        .loading::after {
+            content: '...';
+            animation: dots 1.5s steps(4, end) infinite;
+        }
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60%, 100% { content: '...'; }
+        }
+        #optimizeSection { 
+            display: none; 
+            margin-top: 30px;
+        }
+        .itinerary-day { 
+            background: #f5f7fa; 
+            padding: 20px; 
+            margin: 15px 0; 
+            border-radius: 8px; 
+            border-left: 4px solid #667eea; 
+        }
+        .itinerary-day h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+        .attraction-item {
+            background: white;
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 5px;
+            border-left: 3px solid #764ba2;
+        }
+        .attraction-item strong {
+            color: #667eea;
+        }
+        .score-breakdown {
+            font-size: 0.85em;
+            color: #666;
+            margin-top: 5px;
+            padding: 8px;
+            background: rgba(255,255,255,0.5);
+            border-radius: 5px;
+        }
+        .score-breakdown-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #333;
+        }
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 4px solid #c62828;
         }
     </style>
 </head>
@@ -166,56 +222,46 @@
         <h1>🌍 Tourism Recommendation System</h1>
         
         <div class="card">
-            <h2>Find Your Perfect Destination</h2>
+            <h2>Find Your Perfect Attractions</h2>
+            
             <div class="form-group">
-                <label>Budget Level:</label>
-                <select id="budget">
-                    <option value="">Any Budget</option>
-                    <option value="low">Budget-Friendly ($)</option>
-                    <option value="medium">Moderate ($$)</option>
-                    <option value="high">Luxury ($$$)</option>
+                <label>📍 City (Optional):</label>
+                <select id="city">
+                    <option value="any">Any City</option>
                 </select>
             </div>
             
             <div class="form-group">
-                <label>Destination Type:</label>
-                <select id="type">
-                    <option value="">Any Type</option>
-                    <option value="city">City</option>
-                    <option value="beach">Beach</option>
-                    <option value="nature">Nature</option>
-                    <option value="mixed">Mixed</option>
+                <label>🌐 Country (Optional):</label>
+                <select id="country">
+                    <option value="any">Any Country</option>
                 </select>
             </div>
             
             <div class="form-group">
-                <label>Best Season:</label>
-                <select id="season">
-                    <option value="">Any Season</option>
-                    <option value="spring">Spring</option>
-                    <option value="summer">Summer</option>
-                    <option value="fall">Fall</option>
-                    <option value="winter">Winter</option>
+                <label>⭐ Minimum Rating:</label>
+                <select id="minRating">
+                    <option value="0">Any Rating</option>
+                    <option value="3.0">3.0+ Stars</option>
+                    <option value="3.5">3.5+ Stars</option>
+                    <option value="4.0" selected>4.0+ Stars</option>
+                    <option value="4.5">4.5+ Stars</option>
                 </select>
             </div>
             
             <div class="form-group">
-                <label>Interests (select all that apply):</label>
-                <div class="checkbox-group">
-                    <label><input type="checkbox" value="culture"> Culture</label>
-                    <label><input type="checkbox" value="food"> Food</label>
-                    <label><input type="checkbox" value="beach"> Beach</label>
-                    <label><input type="checkbox" value="nature"> Nature</label>
-                    <label><input type="checkbox" value="adventure"> Adventure</label>
-                    <label><input type="checkbox" value="art"> Art</label>
-                    <label><input type="checkbox" value="history"> History</label>
-                    <label><input type="checkbox" value="shopping"> Shopping</label>
-                    <label><input type="checkbox" value="wellness"> Wellness</label>
-                    <label><input type="checkbox" value="diving"> Diving</label>
+                <label>🎯 Interest Categories (select all that apply):</label>
+                <div class="checkbox-group" id="categoriesGroup">
+                    <div class="loading">Loading categories...</div>
                 </div>
             </div>
             
-            <button onclick="getRecommendations()">Get Recommendations</button>
+            <div class="form-group">
+                <label>📊 Number of Recommendations:</label>
+                <input type="number" id="limit" value="10" min="1" max="20" placeholder="1-20">
+            </div>
+            
+            <button id="recommendBtn" onclick="getRecommendations()">Get Recommendations</button>
         </div>
         
         <div id="recommendations" class="results"></div>
@@ -223,15 +269,11 @@
         <div id="optimizeSection" class="card">
             <h2>Optimize Your Itinerary</h2>
             <p style="margin-bottom: 15px; color: #666;">
-                Selected <span id="selectedCount">0</span> destination(s)
+                Selected <span id="selectedCount">0</span> attraction(s)
             </p>
             <div class="form-group">
-                <label>Total Days:</label>
-                <input type="number" id="days" placeholder="e.g., 14" min="1">
-            </div>
-            <div class="form-group">
-                <label>Total Budget (USD) - Optional:</label>
-                <input type="number" id="totalBudget" placeholder="e.g., 3000">
+                <label>📅 Total Days for Trip:</label>
+                <input type="number" id="days" placeholder="e.g., 5" min="1" required>
             </div>
             <button onclick="optimizeItinerary()">Optimize Itinerary</button>
             <div id="itinerary"></div>
@@ -239,58 +281,143 @@
     </div>
     
     <script>
-        let selectedDestinations = new Set();
+        let selectedAttractions = new Set();
+        let cities = [];
+        let countries = [];
+        let categories = [];
+        
+        // Load destinations and categories on page load
+        async function loadInitialData() {
+            try {
+                // Load cities and countries
+                const destResponse = await fetch('/api/destinations');
+                const destData = await destResponse.json();
+                cities = destData.cities || [];
+                countries = destData.countries || [];
+                
+                // Populate city dropdown
+                const citySelect = document.getElementById('city');
+                cities.forEach(city => {
+                    const option = document.createElement('option');
+                    option.value = city;
+                    option.textContent = city;
+                    citySelect.appendChild(option);
+                });
+                
+                // Populate country dropdown
+                const countrySelect = document.getElementById('country');
+                countries.forEach(country => {
+                    const option = document.createElement('option');
+                    option.value = country;
+                    option.textContent = country;
+                    countrySelect.appendChild(option);
+                });
+                
+                // Load categories
+                const catResponse = await fetch('/api/categories');
+                const catData = await catResponse.json();
+                categories = catData.categories || [];
+                
+                // Populate category checkboxes
+                const categoriesGroup = document.getElementById('categoriesGroup');
+                categoriesGroup.innerHTML = '';
+                categories.forEach(category => {
+                    const label = document.createElement('label');
+                    label.innerHTML = `<input type="checkbox" value="${category}" class="category-checkbox"> ${category}`;
+                    categoriesGroup.appendChild(label);
+                });
+            } catch (error) {
+                console.error('Error loading initial data:', error);
+                document.getElementById('categoriesGroup').innerHTML = 
+                    '<div class="error-message">Error loading categories. Please refresh the page.</div>';
+            }
+        }
+        
+        // Call on page load
+        loadInitialData();
         
         async function getRecommendations() {
-            const budget = document.getElementById('budget').value;
-            const type = document.getElementById('type').value;
-            const season = document.getElementById('season').value;
-            const interests = Array.from(document.querySelectorAll('.checkbox-group input:checked'))
+            const city = document.getElementById('city').value;
+            const country = document.getElementById('country').value;
+            const minRating = parseFloat(document.getElementById('minRating').value) || 0;
+            const limit = parseInt(document.getElementById('limit').value) || 10;
+            const selectedCategories = Array.from(document.querySelectorAll('.category-checkbox:checked'))
                 .map(cb => cb.value);
             
             const container = document.getElementById('recommendations');
-            container.innerHTML = '<div class="loading">🔍 Finding your perfect destinations...</div>';
+            const recommendBtn = document.getElementById('recommendBtn');
+            
+            container.innerHTML = '<div class="loading">🔍 Finding your perfect attractions</div>';
+            recommendBtn.disabled = true;
             
             try {
                 const response = await fetch('/api/recommend', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ budget, type, season, interests })
+                    body: JSON.stringify({ 
+                        city: city === 'any' ? null : city,
+                        country: country === 'any' ? null : country,
+                        min_rating: minRating,
+                        categories: selectedCategories,
+                        limit: limit
+                    })
                 });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to get recommendations');
+                }
                 
                 const recommendations = await response.json();
                 displayRecommendations(recommendations);
             } catch (error) {
-                container.innerHTML = '<div class="loading">❌ Error loading recommendations</div>';
+                container.innerHTML = '<div class="error-message">❌ Error loading recommendations. Please try again.</div>';
                 console.error('Error:', error);
+            } finally {
+                recommendBtn.disabled = false;
             }
         }
         
         function displayRecommendations(recommendations) {
             const container = document.getElementById('recommendations');
             
-            if (recommendations.length === 0) {
-                container.innerHTML = '<div class="loading">No destinations found. Try different preferences!</div>';
+            if (!recommendations || recommendations.length === 0) {
+                container.innerHTML = '<div class="error-message">No attractions found. Try different preferences!</div>';
                 return;
             }
             
-            container.innerHTML = recommendations.map(dest => {
-                const isSelected = selectedDestinations.has(dest.id);
-                const budgetClass = `badge-budget-${dest.budget}`;
-                const stars = '⭐'.repeat(Math.round(dest.rating));
+            container.innerHTML = recommendations.map(att => {
+                const isSelected = selectedAttractions.has(att.id);
+                const stars = '★'.repeat(Math.floor(att.rating)) + (att.rating % 1 >= 0.5 ? '½' : '');
+                const reviewCount = att.review_count.toLocaleString();
+                
+                // Format categories
+                const categoryTags = att.categories.map(cat => 
+                    `<span class="category-tag">${cat}</span>`
+                ).join('');
                 
                 return `
-                    <div class="destination-card ${isSelected ? 'selected-card' : ''}" id="card-${dest.id}">
-                        <h3>${dest.name}</h3>
-                        <p style="color: #888; font-style: italic;">${dest.description}</p>
-                        <p><strong>📍 Country:</strong> ${dest.country}</p>
-                        <p><strong>🏖️ Type:</strong> ${dest.type}</p>
-                        <p><strong>💰 Budget:</strong> <span class="badge ${budgetClass}">${dest.budget.toUpperCase()}</span></p>
-                        <p><strong>⭐ Rating:</strong> ${stars} (${dest.rating})</p>
-                        <p><strong>🎯 Interests:</strong> ${dest.interests.join(', ')}</p>
-                        <p><strong>🌤️ Best Season:</strong> ${dest.season.join(', ')}</p>
-                        <span class="score">Match Score: ${Math.round(dest.score)}</span>
-                        <button class="add-btn" onclick="toggleDestination(${dest.id}, '${dest.name}')">
+                    <div class="attraction-card ${isSelected ? 'selected-card' : ''}" id="card-${att.id}" onclick="toggleAttraction(${att.id})">
+                        <h3>${att.place_name}</h3>
+                        <p><strong>📍 Location:</strong> ${att.city}, ${att.country}</p>
+                        <div class="star-rating">${stars}</div>
+                        <p><strong>⭐ Rating:</strong> ${att.rating.toFixed(1)} / 5.0</p>
+                        <p><strong>💬 Reviews:</strong> ${reviewCount}</p>
+                        <div style="margin: 10px 0;">
+                            <strong>🏷️ Categories:</strong>
+                            <div style="margin-top: 5px;">${categoryTags || '<em>No categories</em>'}</div>
+                        </div>
+                        <div class="score-badge">Match Score: ${att.score.toFixed(1)}/100</div>
+                        ${att.score_breakdown ? `
+                            <div class="score-breakdown">
+                                <div class="score-breakdown-title">Score Breakdown:</div>
+                                Base: ${att.score_breakdown.base_score.toFixed(1)} | 
+                                Location: +${att.score_breakdown.location_bonus.toFixed(1)} | 
+                                Categories: +${att.score_breakdown.category_bonus.toFixed(1)} | 
+                                Quality: +${att.score_breakdown.quality_bonus.toFixed(1)} | 
+                                Popularity: +${att.score_breakdown.popularity_bonus.toFixed(1)}
+                            </div>
+                        ` : ''}
+                        <button class="add-btn" onclick="event.stopPropagation(); toggleAttraction(${att.id})">
                             ${isSelected ? '✓ Selected' : '+ Add to Itinerary'}
                         </button>
                     </div>
@@ -298,54 +425,64 @@
             }).join('');
         }
         
-        function toggleDestination(id, name) {
+        function toggleAttraction(id) {
             const card = document.getElementById(`card-${id}`);
+            if (!card) return;
             
-            if (selectedDestinations.has(id)) {
-                selectedDestinations.delete(id);
+            if (selectedAttractions.has(id)) {
+                selectedAttractions.delete(id);
                 card.classList.remove('selected-card');
             } else {
-                selectedDestinations.add(id);
+                selectedAttractions.add(id);
                 card.classList.add('selected-card');
             }
             
-            document.getElementById('selectedCount').textContent = selectedDestinations.size;
+            // Update UI
+            document.getElementById('selectedCount').textContent = selectedAttractions.size;
             document.getElementById('optimizeSection').style.display = 
-                selectedDestinations.size > 0 ? 'block' : 'none';
+                selectedAttractions.size > 0 ? 'block' : 'none';
             
             // Update button text
             const button = card.querySelector('button');
-            button.textContent = selectedDestinations.has(id) ? '✓ Selected' : '+ Add to Itinerary';
+            if (button) {
+                button.textContent = selectedAttractions.has(id) ? '✓ Selected' : '+ Add to Itinerary';
+            }
         }
         
         async function optimizeItinerary() {
             const days = parseInt(document.getElementById('days').value);
-            const budgetInput = document.getElementById('totalBudget').value;
-            const budget = budgetInput ? parseInt(budgetInput) : null;
             
-            if (!days || selectedDestinations.size === 0) {
-                alert('Please select destinations and enter total days');
+            if (!days || days <= 0) {
+                alert('Please enter a valid number of days (at least 1)');
+                return;
+            }
+            
+            if (selectedAttractions.size === 0) {
+                alert('Please select at least one attraction');
                 return;
             }
             
             const container = document.getElementById('itinerary');
-            container.innerHTML = '<div class="loading">✨ Optimizing your itinerary...</div>';
+            container.innerHTML = '<div class="loading">✨ Optimizing your itinerary</div>';
             
             try {
                 const response = await fetch('/api/optimize', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
-                        destinationIds: Array.from(selectedDestinations), 
-                        days, 
-                        budget 
+                        attractionIds: Array.from(selectedAttractions), 
+                        days: days
                     })
                 });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to optimize itinerary');
+                }
                 
                 const result = await response.json();
                 displayItinerary(result);
             } catch (error) {
-                container.innerHTML = '<div class="loading">❌ Error optimizing itinerary</div>';
+                container.innerHTML = '<div class="error-message">❌ Error optimizing itinerary. Please try again.</div>';
                 console.error('Error:', error);
             }
         }
@@ -354,34 +491,41 @@
             const container = document.getElementById('itinerary');
             
             if (result.error) {
-                container.innerHTML = `<div class="loading">❌ ${result.error}</div>`;
+                container.innerHTML = `<div class="error-message">❌ ${result.error}</div>`;
                 return;
             }
             
-            container.innerHTML = `
-                ${result.itinerary.map((item, i) => `
-                    <div class="itinerary-item">
-                        <h4>📅 Day ${item.start_day}${item.days > 1 ? `-${item.end_day}` : ''}: ${item.destination}, ${item.country}</h4>
-                        <p><strong>Duration:</strong> ${item.days} day${item.days > 1 ? 's' : ''}</p>
-                        <p><strong>Budget Level:</strong> ${item.budget_level.toUpperCase()}</p>
-                        <p><strong>Estimated Cost:</strong> $${item.estimated_cost} (~$${Math.round(item.estimated_cost / item.days)}/day)</p>
-                        <p><strong>Recommended Activities:</strong> ${item.activities.join(', ')}</p>
+            if (!result.itinerary || result.itinerary.length === 0) {
+                container.innerHTML = '<div class="error-message">No itinerary generated. Please try again.</div>';
+                return;
+            }
+            
+            let html = `<div style="margin-top: 20px;">
+                <p><strong>Total Attractions:</strong> ${result.total_attractions}</p>
+                <p><strong>Cities to Visit:</strong> ${result.cities_visited.join(', ')}</p>
+            </div>`;
+            
+            result.itinerary.forEach(day => {
+                html += `
+                    <div class="itinerary-day">
+                        <h4>📅 Day ${day.day} ${day.cities.length > 0 ? `- ${day.cities.join(', ')}` : ''}</h4>
+                        <p><strong>Total Attractions:</strong> ${day.total_attractions} | 
+                        <strong>Estimated Time:</strong> ${day.total_hours} hours</p>
+                        ${day.attractions.map(att => `
+                            <div class="attraction-item">
+                                <strong>${att.name}</strong><br>
+                                <small>📍 ${att.city}, ${att.country}</small><br>
+                                <small>⭐ ${att.rating.toFixed(1)} | 💬 ${att.review_count.toLocaleString()} reviews</small><br>
+                                <small>⏱️ Estimated Time: ${att.estimated_time} hours</small><br>
+                                <small>🏷️ ${att.categories.join(', ')}</small>
+                            </div>
+                        `).join('')}
                     </div>
-                `).join('')}
-                <div class="total-cost">
-                    💵 Total Cost: $${result.total_cost}
-                    <div style="font-size: 0.7em; margin-top: 10px;">
-                        Average: $${result.average_daily_cost}/day over ${result.total_days} days
-                    </div>
-                    ${result.within_budget !== null ? 
-                        (result.within_budget ? 
-                            '<div style="margin-top: 10px;">✅ Within Budget</div>' : 
-                            '<div style="margin-top: 10px;">⚠️ Over Budget</div>') 
-                        : ''}
-                </div>
-            `;
+                `;
+            });
+            
+            container.innerHTML = html;
         }
     </script>
 </body>
 </html>
-
