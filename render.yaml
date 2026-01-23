@@ -4,7 +4,10 @@ services:
     env: python
     region: oregon
     plan: free
-    buildCommand: pip install -r requirements.txt
+    buildCommand: |
+      pip install --upgrade pip
+      pip install --only-binary=:all: numpy==1.26.4 pandas==2.2.3
+      pip install Flask==3.0.0 Flask-Caching==2.1.0 requests==2.31.0 python-dotenv==1.0.0 gunicorn==21.2.0 Werkzeug==3.0.1
     startCommand: gunicorn app:app --bind 0.0.0.0:$PORT
     envVars:
       - key: PYTHON_VERSION
