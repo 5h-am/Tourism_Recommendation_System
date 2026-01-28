@@ -2,10 +2,13 @@ let selectedAttractions = new Set();
 let cities = [];
 let countries = [];
 let categories = [];
+let citiesByCountry = {};
+let map = null;
+let markers = [];
 
 const STORAGE_KEYS = {
-    SELECTED_ATTRACTIONS: 'tourism_selected_attractions',
-    PREFERENCES: 'tourism_preferences'
+    SELECTED_ATTRACTIONS: 'selectedAttractions',
+    PREFERENCES: 'userPreferences',
 };
 
 async function loadInitialData() {
@@ -14,41 +17,43 @@ async function loadInitialData() {
         const destData = await destResponse.json();
         cities = destData.cities || [];
         countries = destData.countries || [];
-        
+        citiesByCountry = destData.citiesByCountry || {};
+
         const citySelect = document.getElementById('city');
-        cities.forEach(city => {
+        cities.forEach((city) => {
             const option = document.createElement('option');
             option.value = city;
             option.textContent = city;
             citySelect.appendChild(option);
         });
-        
+
         const countrySelect = document.getElementById('country');
-        countries.forEach(country => {
+        countries.forEach((country) => {
             const option = document.createElement('option');
             option.value = country;
             option.textContent = country;
             countrySelect.appendChild(option);
         });
-        
+
+        countrySelect.addEventListener('change', onCountryChange);
+
         const catResponse = await fetch('/api/categories');
         const catData = await catResponse.json();
         categories = catData.categories || [];
-        
+
         const categoriesGroup = document.getElementById('categoriesGroup');
         categoriesGroup.innerHTML = '';
-        categories.forEach(category => {
+        categories.forEach((category) => {
             const label = document.createElement('label');
             label.innerHTML = `<input type="checkbox" value="${category}" class="category-checkbox"> ${category}`;
             categoriesGroup.appendChild(label);
         });
-        
+
         loadPreferences();
         loadSelectedAttractions();
-        
     } catch (error) {
         console.error('Error loading initial data:', error);
-        document.getElementById('categoriesGroup').innerHTML = 
+        document.getElementById('categoriesGroup').innerHTML =
             '<div class="error-message">Error loading categories. Please refresh the page.</div>';
     }
 }
@@ -76,8 +81,13 @@ function loadPreferences() {
         if (!saved) return;
         
         const preferences = JSON.parse(saved);
-        document.getElementById('city').value = preferences.city || 'any';
         document.getElementById('country').value = preferences.country || 'any';
+
+        if (typeof onCountryChange === 'function') {
+            onCountryChange();
+        }
+
+        document.getElementById('city').value = preferences.city || 'any';
         document.getElementById('minRating').value = preferences.minRating || '4.0';
         document.getElementById('limit').value = preferences.limit || '10';
         
@@ -90,6 +100,32 @@ function loadPreferences() {
     } catch (error) {
         console.error('Error loading preferences:', error);
     }
+}
+
+function onCountryChange() {
+    const selectedCountry = document.getElementById('country').value;
+    const citySelect = document.getElementById('city');
+
+    citySelect.innerHTML = '<option value="any">Any City</option>';
+
+    if (selectedCountry === 'any') {
+        cities.forEach((city) => {
+            const option = document.createElement('option');
+            option.value = city;
+            option.textContent = city;
+            citySelect.appendChild(option);
+        });
+    } else {
+        const countryCities = citiesByCountry[selectedCountry] || [];
+        countryCities.forEach((city) => {
+            const option = document.createElement('option');
+            option.value = city;
+            option.textContent = city;
+            citySelect.appendChild(option);
+        });
+    }
+
+    citySelect.value = 'any';
 }
 
 function saveSelectedAttractions() {
@@ -281,6 +317,72 @@ function displayRecommendations(recommendations) {
             </div>
         `;
     }).join('');
+
+    const attractionsWithCoords = recommendations.filter(
+        (att) => typeof att.latitude === 'number' && typeof att.longitude === 'number',
+    );
+
+    if (attractionsWithCoords.length > 0) {
+        showAttractionsOnMap(attractionsWithCoords);
+    } else {
+        const mapSection = document.getElementById('mapSection');
+        if (mapSection) {
+            mapSection.style.display = 'none';
+        }
+    }
+}
+
+function initializeMap() {
+    if (!map && typeof L !== 'undefined') {
+        map = L.map('map').setView([20, 0], 2);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 18,
+        }).addTo(map);
+    }
+}
+
+function showAttractionsOnMap(attractions) {
+    if (!map) {
+        initializeMap();
+    }
+    if (!map) {
+        return;
+    }
+
+    markers.forEach((marker) => map.removeLayer(marker));
+    markers = [];
+
+    const bounds = [];
+
+    attractions.forEach((att) => {
+        if (att.latitude && att.longitude) {
+            const marker = L.marker([att.latitude, att.longitude]).bindPopup(`
+                <div>
+                    <h3>${att.place_name}</h3>
+                    <p><strong>📍</strong> ${att.city}, ${att.country}</p>
+                    <p><strong>⭐</strong> ${att.rating.toFixed(1)} / 5.0</p>
+                    <p><strong>💬</strong> ${att.review_count.toLocaleString()} reviews</p>
+                    <p><strong>Match Score:</strong> ${att.score.toFixed(1)}/100</p>
+                </div>
+            `);
+
+            marker.addTo(map);
+            markers.push(marker);
+            bounds.push([att.latitude, att.longitude]);
+        }
+    });
+
+    if (bounds.length > 0) {
+        map.fitBounds(bounds, { padding: [50, 50] });
+    }
+
+    const mapSection = document.getElementById('mapSection');
+    if (mapSection) {
+        mapSection.style.display = 'block';
+    }
+
+    setTimeout(() => map.invalidateSize(), 100);
 }
 
 function toggleAttraction(id) {
@@ -417,6 +519,15 @@ function clearAllFilters() {
         const btn = card.querySelector('.add-btn');
         if (btn) btn.textContent = '+ Add to Itinerary';
     });
+
+    const mapSection = document.getElementById('mapSection');
+    if (mapSection) {
+        mapSection.style.display = 'none';
+    }
+    if (map) {
+        markers.forEach((marker) => map.removeLayer(marker));
+        markers = [];
+    }
 }
 
 function clearSelections() {
@@ -431,6 +542,7 @@ function clearSelections() {
     
     document.getElementById('selectedCount').textContent = '0';
     document.getElementById('optimizeSection').style.display = 'none';
+    document.getElementById('itinerary').innerHTML = '';
 }
 
 if (document.readyState === 'loading') {

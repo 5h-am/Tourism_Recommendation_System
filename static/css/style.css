@@ -340,3 +340,23 @@ button[onclick*="clearSelections"]:hover {
     font-size: 0.9em;
     font-style: italic;
 }
+
+#map {
+    z-index: 1;
+}
+
+.leaflet-popup-content {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    min-width: 200px;
+}
+
+.leaflet-popup-content h3 {
+    color: #667eea;
+    margin: 0 0 10px 0;
+    font-size: 1.1em;
+}
+
+.leaflet-popup-content p {
+    margin: 5px 0;
+    font-size: 0.9em;
+}
